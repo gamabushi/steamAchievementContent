@@ -1,0 +1,16 @@
+{
+  "name": "trophy-video",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "setup": "npm install",
+    "generate": "node generate.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  },
+  "devDependencies": {
+    "mediabunny": "1.62.1"
+  }
+}

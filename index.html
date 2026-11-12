@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a1a">
+<!-- Chiede ai motori di ricerca di non mostrare il sito nei risultati -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="googlebot" content="noindex, nofollow, noarchive">
+<title>Trofeo Steam</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a1a;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    min-height: 100vh;
+    color: #ccc;
+  }
+  main {
+    padding: 24px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1rem;
+    color: #4f94c9;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+  .field label, .label {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6a8a9a;
+    margin-bottom: 5px;
+  }
+  .field input[type="text"], .field select {
+    width: 100%;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    color: #e8e8e8;
+    padding: 10px 12px;
+    font-size: 16px; /* 16px: iPhone non fa zoom quando tocchi il campo */
+    outline: none;
+    font-family: inherit;
+  }
+  .field input:focus, .field select:focus { border-color: #4f94c9; }
+  .row { display: flex; gap: 10px; }
+  .row .field { flex: 1; min-width: 0; }
+
+  #img-input { display: none; }
+  .btn-img {
+    width: 100%;
+    background: #2a2a2a;
+    border: 2px dashed #3a3a3a;
+    border-radius: 4px;
+    color: #6a8a9a;
+    padding: 18px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-align: center;
+  }
+  #preview-wrap {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: #2a2a2a;
+    border: 1px solid #7a6232;
+    border-radius: 4px;
+    padding: 10px 14px;
+  }
+  #preview-wrap.visible { display: flex; }
+  #img-preview { width: 52px; height: 52px; object-fit: cover; border-radius: 2px; border: 1px solid #7a6232; }
+  #preview-name { font-size: 0.8rem; color: #8a8a8a; flex: 1; word-break: break-all; }
+  .btn-small {
+    background: none;
+    border: 1px solid #3a3a3a;
+    color: #6a8a9a;
+    border-radius: 3px;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  .anteprima { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  #anteprima {
+    width: min(220px, 60vw);
+    aspect-ratio: 9 / 16;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px #0008;
+  }
+  .check { font-size: 0.8rem; color: #8a9aaa; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .nota { font-size: 0.72rem; color: #6a7a8a; text-align: center; line-height: 1.4; }
+
+  .btn {
+    border: none;
+    border-radius: 4px;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #fff;
+    background: #5c7e10;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    font-family: inherit;
+  }
+  .btn:active { filter: brightness(0.85); }
+  .btn:disabled { background: #3a4a20; color: #9aa88a; cursor: wait; }
+  .btn-blu { background: #4f94c9; }
+  .btn-grigio { background: #2a2a2a; border: 1px solid #3a3a3a; color: #ccc; font-weight: 600; }
+
+  .barra { height: 6px; background: #2a2a2a; border-radius: 3px; overflow: hidden; display: none; }
+  .barra.visibile { display: block; }
+  .barra div { height: 100%; width: 0; background: #5c7e10; transition: width 0.1s; }
+  #stato { font-size: 0.85rem; color: #8fa3b3; text-align: center; min-height: 1.2em; }
+  #stato.errore { color: #e07a6a; }
+
+  #risultato { display: none; flex-direction: column; gap: 10px; }
+  #risultato.visibile { display: flex; }
+  #risultato video {
+    width: min(220px, 60vw);
+    align-self: center;
+    border-radius: 8px;
+    background: #000;
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🏆 Crea il trofeo</h1>
+
+  <div class="field">
+    <span class="label">Immagine icona</span>
+    <input type="file" accept="image/*" id="img-input">
+    <button class="btn-img" id="btn-img" type="button">📁 Tocca per scegliere una foto</button>
+    <div id="preview-wrap">
+      <img id="img-preview" src="" alt="">
+      <span id="preview-name"></span>
+      <button class="btn-small" id="change-btn" type="button">Cambia</button>
+      <button class="btn-small" id="remove-btn" type="button">✕</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="inp-title">Titolo trofeo</label>
+    <input type="text" id="inp-title" placeholder="Es: Hai pestato una cacca" maxlength="48">
+  </div>
+
+  <div class="field">
+    <label for="inp-desc">Descrizione</label>
+    <input type="text" id="inp-desc" placeholder="Es: Forse guarda dove metti i piedi." maxlength="80">
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label for="inp-rarity">Rarità (%)</label>
+      <input type="text" id="inp-rarity" placeholder="Es: 3.7" maxlength="6" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label for="inp-pos">Posizione</label>
+      <select id="inp-pos">
+        <option value="alto" selected>In alto</option>
+        <option value="centro">Al centro</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="inp-size">Dimensione</label>
+      <select id="inp-size">
+        <option value="piccolo">Piccola</option>
+        <option value="medio" selected>Media</option>
+        <option value="grande">Grande</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="anteprima">
+    <canvas id="anteprima" width="540" height="960"></canvas>
+    <label class="check"><input type="checkbox" id="inp-zone" checked> Mostra zone coperte da TikTok / Reels</label>
+    <p class="nota">Le zone scure sono solo nell'anteprima, non finiscono nel video.</p>
+  </div>
+
+  <button class="btn" id="btn-genera" type="button">🎬 Crea video</button>
+  <div class="barra" id="barra"><div></div></div>
+  <div id="stato"></div>
+
+  <section id="risultato">
+    <video id="video" controls playsinline muted></video>
+    <button class="btn btn-blu" id="btn-condividi" type="button" hidden>📲 Salva / Condividi</button>
+    <a class="btn btn-grigio" id="btn-scarica" download>⬇️ Scarica mp4</a>
+    <p class="nota">Su iPhone: "Salva / Condividi" → "Salva video" per averlo nel Rullino.<br>
+      In CapCut: aggiungi come <b>Sovrapposizione</b> → <b>Rimuovi sfondo → Chroma key</b> sul verde.<br>
+      Il video è senza audio: aggiungi il suono in CapCut, il popup entra a <b>0,3 s</b>.</p>
+  </section>
+</main>
+
+<script type="module">
+  import { creaVideo, disegnaAnteprima, supportato, dataSblocco, caricaImmagine } from './trophy.js';
+
+  const $ = id => document.getElementById(id);
+  let immagine = null;
+  let urlVideo = null;
+
+  // Per generate.js (terminale)
+  window.trofeo = { creaVideo, caricaImmagine, dataSblocco };
+
+  function dati() {
+    return {
+      titolo: $('inp-title').value.trim() || 'Obiettivo sbloccato',
+      descrizione: $('inp-desc').value.trim(),
+      rarita: $('inp-rarity').value.trim().replace(',', '.'),
+      sbloccato: dataSblocco(),
+      immagine,
+      posizione: $('inp-pos').value,
+      dimensione: $('inp-size').value
+    };
+  }
+
+  let anteprimaInCoda = false;
+  function aggiornaAnteprima() {
+    if (anteprimaInCoda) return;
+    anteprimaInCoda = true;
+    requestAnimationFrame(() => {
+      anteprimaInCoda = false;
+      disegnaAnteprima($('anteprima'), dati(), $('inp-zone').checked);
+    });
+  }
+
+  // Immagine
+  $('btn-img').onclick = $('change-btn').onclick = () => $('img-input').click();
+  $('remove-btn').onclick = () => {
+    immagine = null;
+    $('img-input').value = '';
+    $('preview-wrap').classList.remove('visible');
+    $('btn-img').hidden = false;
+    aggiornaAnteprima();
+  };
+  $('img-input').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      try {
+        immagine = await caricaImmagine(ev.target.result);
+        $('img-preview').src = ev.target.result;
+        $('preview-name').textContent = file.name;
+        $('btn-img').hidden = true;
+        $('preview-wrap').classList.add('visible');
+        aggiornaAnteprima();
+      } catch (err) { mostraStato(err.message, true); }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  for (const id of ['inp-title', 'inp-desc', 'inp-rarity', 'inp-pos', 'inp-size', 'inp-zone']) {
+    $(id).addEventListener('input', aggiornaAnteprima);
+  }
+  document.fonts?.ready.then(aggiornaAnteprima);
+  aggiornaAnteprima();
+
+  function mostraStato(testo, errore) {
+    $('stato').textContent = testo;
+    $('stato').classList.toggle('errore', !!errore);
+  }
+
+  function nomeFile(titolo) {
+    const slug = titolo.normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+    return 'trophy' + (slug ? '-' + slug : '') + '.mp4';
+  }
+
+  // Creazione del video
+  supportato().then(ok => {
+    if (!ok) mostraStato('⚠️ Questo browser non sa creare video mp4. Usa Chrome o Safari aggiornati.', true);
+  });
+
+  $('btn-genera').onclick = async () => {
+    const btn = $('btn-genera'), barra = $('barra');
+    btn.disabled = true;
+    btn.textContent = '⏳ Creo il video…';
+    barra.classList.add('visibile');
+    barra.firstElementChild.style.width = '0';
+    mostraStato('');
+    $('risultato').classList.remove('visibile');
+    try {
+      const d = dati();
+      const blob = await creaVideo(d, {
+        onProgress: (i, tot) => { barra.firstElementChild.style.width = (100 * i / tot) + '%'; }
+      });
+      const nome = nomeFile(d.titolo);
+      const file = new File([blob], nome, { type: 'video/mp4' });
+
+      if (urlVideo) URL.revokeObjectURL(urlVideo);
+      urlVideo = URL.createObjectURL(blob);
+      $('video').src = urlVideo;
+      $('btn-scarica').href = urlVideo;
+      $('btn-scarica').download = nome;
+
+      const puoCondividere = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+      $('btn-condividi').hidden = !puoCondividere;
+      $('btn-condividi').onclick = () => navigator.share({ files: [file] }).catch(() => {});
+
+      $('risultato').classList.add('visibile');
+      mostraStato('✅ Video pronto: ' + nome);
+      $('risultato').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      console.error(err);
+      mostraStato('❌ ' + (err.message || err), true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🎬 Crea video';
+      barra.classList.remove('visibile');
+    }
+  };
+</script>
+</body>
+</html>
